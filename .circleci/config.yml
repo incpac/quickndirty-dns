@@ -1,0 +1,97 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.9
+    working_directory: "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+    steps:
+      - checkout
+      - run:
+          name: "Get dependencies"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            go get -v
+            dep ensure
+            mkdir build
+      - run:
+          name: "Build MacOS"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            export VERSION=$(git log --format=%B -n1)
+            export GOOS=darwin
+            export GOARCH=amd64
+            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH
+      - run:
+          name: "Build Linux"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            export VERSION=$(git log --format=%B -n1)
+            export GOOS=linux
+            export GOARCH=amd64
+            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH
+      - run:
+          name: "Build Windows"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            export VERSION=$(git log --format=%B -n1)
+            export GOOS=windows
+            export GOARCH=amd64
+            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH.exe
+      - run:
+          name: "Publish to Github"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            go get github.com/tcnksm/ghr
+            export VERSION=$(git log  --format=%B -n1)
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete $VERSION ./build/
+  test:
+    docker:
+      - image: circleci/golang:1.9
+    working_directory: "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+    steps:
+      - checkout
+      - run:
+          name: "Get dependencies"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            go get -v
+            dep ensure
+            mkdir build
+      - run:
+          name: "Build MacOS"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            export VERSION=test
+            export GOOS=darwin
+            export GOARCH=amd64
+            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH
+      - run:
+          name: "Build Linux"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            export VERSION=test
+            export GOOS=linux
+            export GOARCH=amd64
+            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH
+      - run:
+          name: "Build Windows"
+          command: |
+            cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            export VERSION=test
+            export GOOS=windows
+            export GOARCH=amd64
+            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH
+workflows:
+  version: 2
+  build-and-release:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: release
+  build-and-test:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only: master
