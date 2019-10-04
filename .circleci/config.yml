@@ -12,7 +12,7 @@ jobs:
             cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             go get -v
             dep ensure
-            mkdir build
+            mkdir release
       - run:
           name: "Build MacOS"
           command: |
@@ -20,7 +20,13 @@ jobs:
             export VERSION=$(git log --format=%B -n1)
             export GOOS=darwin
             export GOARCH=amd64
-            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH
+            mkdir temp
+            go build -ldflags "-X main.Version=$VERSION" -o temp/qnddns
+            cp LICENSE README.md LICENSE-3RD-PARTY.txt temp/
+            cd temp
+            zip ../release/qnddns-${GOOS}-${GOARCH}.zip *
+            cd ../
+            rm -r temp
       - run:
           name: "Build Linux"
           command: |
@@ -28,7 +34,12 @@ jobs:
             export VERSION=$(git log --format=%B -n1)
             export GOOS=linux
             export GOARCH=amd64
-            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH
+            go build -ldflags "-X main.Version=$VERSION" -o temp/qnddns
+            cp LICENSE README.md LICENSE-3RD-PARTY.txt temp/
+            cd temp
+            zip ../release/qnddns-${GOOS}-${GOARCH}.zip *
+            cd ../
+            rm -r temp
       - run:
           name: "Build Windows"
           command: |
@@ -36,14 +47,19 @@ jobs:
             export VERSION=$(git log --format=%B -n1)
             export GOOS=windows
             export GOARCH=amd64
-            go build -ldflags "-X main.Version=$VERSION" -o build/qnddns-$GOOS-$GOARCH.exe
+            go build -ldflags "-X main.Version=$VERSION" -o temp/qnddns
+            cp LICENSE README.md LICENSE-3RD-PARTY.txt temp/
+            cd temp
+            zip ../release/qnddns-${GOOS}-${GOARCH}.zip *
+            cd ../
+            rm -r temp
       - run:
           name: "Publish to Github"
           command: |
             cd "$GOPATH/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             go get github.com/tcnksm/ghr
             export VERSION=$(git log  --format=%B -n1)
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete $VERSION ./build/
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete $VERSION ./release/
   test:
     docker:
       - image: circleci/golang:1.12
