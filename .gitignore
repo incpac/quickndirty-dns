@@ -1,3 +1,5 @@
 vendor
 quickndirty-dns
 qnddns
+config.yml
+logs*
