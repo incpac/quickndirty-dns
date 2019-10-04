@@ -46,10 +46,7 @@ func parseQuery(m *dns.Msg) {
 			}
 
 			if result == "" {
-				ip, err := net.LookupIP(q.Name)
-				if err != nil {
-					log.Printf("Failed external lookup: %s", err.Error())
-				}
+				ip, _ := net.LookupIP(q.Name)
 
 				if ip != nil {
 					result = ip[0].String()
@@ -77,6 +74,20 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg) {
 	switch r.Opcode {
 	case dns.OpcodeQuery:
 		parseQuery(m)
+	}
+
+	var src net.IP
+	if w.RemoteAddr().Network() == "tcp" {
+		src = w.RemoteAddr().(*net.TCPAddr).IP
+	} else {
+		src = w.RemoteAddr().(*net.UDPAddr).IP
+	}
+
+	if m.Answer != nil {
+		response := strings.Split(m.Answer[0].String(), "\t")[4]
+		log.Printf("Received request from %s for %s Returned %s", src, m.Question[0].Name, response)
+	} else {
+		log.Printf("Received request from %s for %s Unable to find valid response", src, m.Question[0].Name)
 	}
 
 	w.WriteMsg(m)
