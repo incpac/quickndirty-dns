@@ -22,7 +22,7 @@ jobs:
             export GOARCH=amd64
             mkdir temp
             go build -ldflags "-X main.Version=$VERSION" -o temp/qnddns
-            cp LICENSE README.md LICENSE-3RD-PARTY.txt temp/
+            cp LICENSE.txt README.md LICENSE-3RD-PARTY.txt temp/
             cd temp
             zip ../release/qnddns-${GOOS}-${GOARCH}.zip *
             cd ../
@@ -35,7 +35,7 @@ jobs:
             export GOOS=linux
             export GOARCH=amd64
             go build -ldflags "-X main.Version=$VERSION" -o temp/qnddns
-            cp LICENSE README.md LICENSE-3RD-PARTY.txt temp/
+            cp LICENSE.txt README.md LICENSE-3RD-PARTY.txt temp/
             cd temp
             zip ../release/qnddns-${GOOS}-${GOARCH}.zip *
             cd ../
@@ -48,7 +48,7 @@ jobs:
             export GOOS=windows
             export GOARCH=amd64
             go build -ldflags "-X main.Version=$VERSION" -o temp/qnddns
-            cp LICENSE README.md LICENSE-3RD-PARTY.txt temp/
+            cp LICENSE.txt README.md LICENSE-3RD-PARTY.txt temp/
             cd temp
             zip ../release/qnddns-${GOOS}-${GOARCH}.zip *
             cd ../
