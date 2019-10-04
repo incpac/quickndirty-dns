@@ -5,8 +5,10 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/miekg/dns"
 	"github.com/spf13/cobra"
@@ -26,6 +28,8 @@ var configPath string
 var conf configuration
 var port int
 
+// Version is set during compilation.
+// It dictates what is returned by qnddns --version.
 var Version string
 
 func parseQuery(m *dns.Msg) {
@@ -92,16 +96,29 @@ func serve(cmd *cobra.Command, args []string) {
 
 	dns.HandleFunc(".", handleDNSRequest)
 
-	server := &dns.Server{Addr: ":" + strconv.Itoa(port), Net: "udp"}
-	defer server.Shutdown()
+	go func() {
+		udp := &dns.Server{Addr: ":" + strconv.Itoa(port), Net: "udp"}
+		err = udp.ListenAndServe()
+		if err != nil {
+			log.Fatalf("Failed to start UDP server: %s\n", err.Error())
+			os.Exit(-1)
+		}
+	}()
 
-	log.Printf("Listening on port %d\n", port)
+	go func() {
+		tcp := &dns.Server{Addr: ":" + strconv.Itoa(port), Net: "tcp"}
+		err = tcp.ListenAndServe()
+		if err != nil {
+			log.Fatalf("Failed to start TCP server: %s\n", err.Error())
+			os.Exit(-1)
+		}
+	}()
 
-	err = server.ListenAndServe()
-	if err != nil {
-		log.Fatalf("Failed to start server: %s\n", err.Error())
-		os.Exit(-1)
-	}
+	sc := make(chan os.Signal)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
+	
+	s := <-sc
+	log.Fatalf("Signal (%v) received, stopping\n", s)
 }
 
 func main() {
