@@ -27,6 +27,7 @@ type configuration struct {
 var configPath string
 var conf configuration
 var port int
+var logfile string
 
 // Version is set during compilation.
 // It dictates what is returned by qnddns --version.
@@ -148,6 +149,11 @@ func main() {
 			if showVersion {
 				fmt.Printf("%s\n", Version)
 			} else {
+				if logfile != "" {
+					f, _ := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+					defer f.Close()
+					log.SetOutput(f)
+				}
 				serve(cmd, args)
 			}
 		},
@@ -156,6 +162,7 @@ func main() {
 	command.Flags().StringVarP(&configPath, "config", "c", "./config.json", "path to the configuration file")
 	command.Flags().IntVarP(&port, "port", "p", 53, "the port to listen on")
 	command.Flags().BoolVarP(&showVersion, "version", "v", false, "display the version")
+	command.Flags().StringVarP(&logfile, "logfile", "", "", "file to write logs to")
 
 	if err := command.Execute(); err != nil {
 		log.Fatal(err)
