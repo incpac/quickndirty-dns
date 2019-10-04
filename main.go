@@ -51,14 +51,18 @@ func parseQuery(m *dns.Msg) {
 					log.Printf("Failed external lookup: %s", err.Error())
 				}
 
-				result = ip[0].String()
+				if ip != nil {
+					result = ip[0].String()
+				}
 			}
 
-			rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, result))
-			if err == nil {
-				m.Answer = append(m.Answer, rr)
-			} else {
-				log.Printf("Failed to create DNS response: %s", err.Error())
+			if result != "" {
+				rr, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, result))
+				if err == nil {
+					m.Answer = append(m.Answer, rr)
+				} else {
+					log.Printf("Failed to create DNS response: %s", err.Error())
+				}
 			}
 		}
 	}
@@ -116,7 +120,7 @@ func serve(cmd *cobra.Command, args []string) {
 
 	sc := make(chan os.Signal)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
-	
+
 	s := <-sc
 	log.Fatalf("Signal (%v) received, stopping\n", s)
 }
